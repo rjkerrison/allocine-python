@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+backoff = "==1.10.0"
+click = "==7.0"
+jmespath = "==0.9.5"
+requests = "==2.21.0"
+PTableUnicode = "==0.9.3"
+
+[dev-packages]
+pytest = "*"
+black = "*"
+
+[requires]
+python_version = "3.11"
