@@ -178,6 +178,14 @@ class Showtime(Schedule):
     def __str__(self):
         return f'{self.date_str} : {self.movie}'
 
+@dataclass
+class MemberCard(Schedule):
+    code: str
+    label: str
+
+    def __str__(self):
+        return f'{self.label}'
+
 
 def day_str(date: date) -> str:
     return to_french_weekday(date.weekday())
@@ -212,6 +220,7 @@ class Theater:
     address: str
     zipcode: str
     city: str
+    member_cards: List[MemberCard]
 
     @property
     def address_str(self):
@@ -465,27 +474,54 @@ class Allocine:
 
             raw_showtimes = jmespath.search('movieShowtimes', theater_showtime)
             showtimes = self.__parse_showtimes(raw_showtimes=raw_showtimes)
+            raw_theater_info = self.__client.get_theater_info_by_id(raw_theater.get('code'))
+            member_cards = jmespath.search('theater.memberCard', raw_theater_info)
+
             theater = Theater(
                 theater_id=raw_theater.get('code'),
                 name=raw_theater.get('name'),
                 address=raw_theater.get('address'),
                 zipcode=raw_theater.get('postalCode'),
                 city=raw_theater.get('city'),
+                member_cards=member_cards,
                 showtimes=showtimes
             )
             theaters.append(theater)
         return theaters
 
+    def get_theater_ids(self, geocode: int):
+        codes = []
+        page = 1
+        while page < 5: # let's not loop forever
+            ret = self.__client.get_showtimelist_from_geocode(geocode=geocode, page=page)
+            page += 1
+
+            total_results = jmespath.search('feed.totalResults', ret)
+            if total_results == 0:
+                raise ValueError(f'Theater not found. Is geocode {geocode!r} correct?')
+
+            theaters = jmespath.search('feed.theaterShowtimes', ret)
+            if theaters is None:
+                break
+            for theater in theaters:
+                code = jmespath.search('place.theater.code', theater)
+                print(code)
+                codes.append(code)
+
+        return codes
+
     def search_theaters(self, geocode: int):
         theaters = []
         page = 1
-        while True:
+        while page < 3: # let's not loop forever
             ret = self.__client.get_showtimelist_from_geocode(geocode=geocode, page=page)
+
             total_results = jmespath.search('feed.totalResults', ret)
             if total_results == 0:
                 raise ValueError(f'Theater not found. Is geocode {geocode!r} correct?')
 
             theaters_to_parse = jmespath.search('feed.theaterShowtimes', ret)
+            print(theaters_to_parse)
             if theaters_to_parse:
                 theaters += self.__get_theaters_from_raw_showtimelist(
                     raw_showtimelist=ret,

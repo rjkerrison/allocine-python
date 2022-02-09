@@ -26,7 +26,7 @@ def extract_field_names(dict_list):
 @click.argument(
     'id_cinema',
     type=str,
-    required=True
+    required=False
 )
 @click.option(
     '--jour', '-j',
@@ -44,7 +44,12 @@ def extract_field_names(dict_list):
     is_flag=True,
     help='ajoute une ligne entre chaque film pour améliorer la lisibilité',
 )
-def main(id_cinema, entrelignes, jour=None, semaine=None):
+@click.option(
+    '--card', '-c',
+    type=str,
+    help='check for a specific card pass, e.g. UGC Illimité',
+)
+def main(id_cinema, entrelignes, jour=None, semaine=None, card=None):
     """
     Les séances de votre cinéma dans le terminal, avec
     ID_CINEMA : identifiant du cinéma sur Allociné,
@@ -69,9 +74,25 @@ def main(id_cinema, entrelignes, jour=None, semaine=None):
             jour_obj = today + timedelta(days=delta)
             jours.append(jour_obj.strftime("%d/%m/%Y"))
 
-    theater = allocine.get_theater(theater_id=id_cinema)
+    if id_cinema is None:
+        codes = allocine.get_theater_ids(83165)
+    else:
+        codes = id_cinema.split(',')
 
-    print('{}, le '.format(theater.name), end='')
+    for code in codes:
+        theater = allocine.get_theater(theater_id=code)
+        if card is not None:
+            if card == 'UGC':
+                if 106002 not in (x['code'] for  x in theater.member_cards):
+                    print(f'SKIPPING {theater.name} because it does not accept UGC.\n')
+                    continue
+
+        display_theater(theater, jours, entrelignes)
+
+def display_theater(theater, jours, entrelignes):
+    print(f'{theater.name}')
+    print(f'{theater.address}, {theater.zipcode}, {theater.city}')
+    print('\n'.join((f'✔️  {x.get("label")}' for x in theater.member_cards)))
     for jour in jours:
         print(get_showtime_table(
             theater=theater,
