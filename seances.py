@@ -93,13 +93,8 @@ def main(id_cinema, entrelignes, jour=None, semaine=None, card=None, earliest_ti
 
     for code in codes:
         theater = allocine.get_theater(theater_id=code)
-        if card is not None:
-            if card == 'UGC':
-                if 106002 not in (x['code'] for  x in theater.member_cards):
-                    print(f'SKIPPING {theater.name} because it does not accept UGC Illimité.\n')
-                    continue
-
-        display_theater(theater, jours, entrelignes, is_showtime_eligible)
+        if check_theater_late_eligibility_rules(theater, card):
+            display_theater(theater, jours, entrelignes, is_showtime_eligible)
 
 def parse_hour_as_datetime(jour, time):
     if time is None:
@@ -114,7 +109,7 @@ def check_card_eligibility(theater, card):
     if card is not None:
         if card == 'UGC':
             if 106002 not in (x['code'] for  x in theater.member_cards):
-                print(f'SKIPPING {theater.name} because it does not accept UGC Illimité.\n')
+                log_v(f'SKIPPING {theater.name} because it does not accept UGC Illimité.\n')
                 return False
     return True
 
@@ -128,22 +123,30 @@ def check_showtime_eligibility(showtime, jour, earliest_time, latest_time):
     )
 
 def display_theater(theater, jours, entrelignes, is_showtime_eligible):
-    print(f'{theater.name} - {theater.theater_id}')
-    print(f'https://allocine.fr/seance/salle_gen_csalle={theater.theater_id}.html')
-    print(f'{theater.address}, {theater.zipcode}, {theater.city}')
-    print('\n'.join((f'✔️  {x.get("label")}' for x in theater.member_cards)))
+    tables = []
+
     for jour in jours:
-        print(get_showtime_table(
+        seances = get_seances(
             theater=theater,
-            entrelignes=entrelignes,
             jour=jour,
             is_showtime_eligible=is_showtime_eligible)
-        )
-        print()
 
+        if len(seances) > 0:
+            tables += [jour, get_showtime_table(seances, entrelignes)]
 
-def get_showtime_table(theater, entrelignes, jour, is_showtime_eligible):
-    showtime_table = []
+    if len(tables) > 0:
+        print(f'{theater.name} - {theater.theater_id}')
+        log_v(f'https://allocine.fr/seance/salle_gen_csalle={theater.theater_id}.html')
+        print(f'{theater.address}, {theater.zipcode}, {theater.city}')
+        log_v('\n'.join((f'✔️  {x.get("label")}' for x in theater.member_cards)))
+        for table in tables:
+            print(table)
+
+    else:
+         log_v(f'{theater.name} - {theater.theater_id} has no eligible showings.')
+
+def get_seances(theater, jour, is_showtime_eligible):
+    seances = []
 
     date_obj = datetime.strptime(jour, '%d/%m/%Y').date()
     movies_available_today = theater.get_movies_available_for_a_day(date=date_obj)
@@ -171,40 +174,39 @@ def get_showtime_table(theater, entrelignes, jour, is_showtime_eligible):
                 movie_row[hour] = f'{showtime.hour_str} - {showtime.end_hour_str}'
 
         if len(movie_row) > 2:
-            showtime_table.append(movie_row)
+            seances.append(movie_row)
         else:
-            print(f'Skipping {title} due to no eligible showings. ', end='')
+            log_v(f'Skipping {title} due to no eligible showings. ')
 
-    seances = showtime_table
+    return seances
 
-    retour = "{}\n".format(jour)
+def get_showtime_table(seances, entrelignes):
+    table = PrettyTable()
+    table.set_style(UNICODE)
+    table.header = False
 
-    if len(seances) <= 0:
-        retour += "Aucune séance"
-
+    if entrelignes is True:
+        table.hrules = ALL
     else:
-        table = PrettyTable()
-        table.set_style(UNICODE)
-        table.header = False
+        table.hrules = FRAME
 
-        if entrelignes is True:
-            table.hrules = ALL
-        else:
-            table.hrules = FRAME
+    table.field_names = extract_field_names(seances)
 
-        table.field_names = extract_field_names(seances)
+    for seances_film in seances:
+        row = []
+        for field_name in table.field_names:
+            row.append(seances_film.get(field_name, ""))
+        table.add_row(row)
 
-        for seances_film in seances:
-            row = []
-            for field_name in table.field_names:
-                row.append(seances_film.get(field_name, ""))
-            table.add_row(row)
+    table.align["*1_film"] = "l"
+    table.sortby = "*1_film"
+    return str(table)
 
-        table.align["*1_film"] = "l"
-        table.sortby = "*1_film"
-        retour += str(table)
+log_level = 'SHH'
 
-    return retour
+def log_v(message):
+    if log_level == 'VERBOSE':
+        print(message)
 
 
 if __name__ == "__main__":
