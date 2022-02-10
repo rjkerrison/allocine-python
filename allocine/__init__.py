@@ -135,6 +135,7 @@ class MovieVersion(Movie):
 @dataclass
 class Schedule:
     date_time: datetime
+    end_time: datetime
 
     @property
     def date(self) -> date:
@@ -147,6 +148,10 @@ class Schedule:
     @property
     def hour_str(self) -> str:
         return self.date_time.strftime('%H:%M')
+
+    @property
+    def end_hour_str(self) -> str:
+        return self.end_time.strftime('%H:%M') if self.end_time is not None else 'unknown'
 
     @property
     def hour_short_str(self) -> str:
@@ -179,7 +184,7 @@ class Showtime(Schedule):
         return f'{self.date_str} : {self.movie}'
 
 @dataclass
-class MemberCard(Schedule):
+class MemberCard:
     code: str
     label: str
 
@@ -504,8 +509,10 @@ class Allocine:
             if theaters is None:
                 break
             for theater in theaters:
-                code = jmespath.search('place.theater.code', theater)
-                print(code)
+                info = jmespath.search('place.theater', theater)
+                code = info.get('code')
+                name = info.get('name')
+                print(f'{code} - {name}')
                 codes.append(code)
 
         return codes
@@ -521,7 +528,7 @@ class Allocine:
                 raise ValueError(f'Theater not found. Is geocode {geocode!r} correct?')
 
             theaters_to_parse = jmespath.search('feed.theaterShowtimes', ret)
-            print(theaters_to_parse)
+
             if theaters_to_parse:
                 theaters += self.__get_theaters_from_raw_showtimelist(
                     raw_showtimelist=ret,
@@ -575,6 +582,7 @@ class Allocine:
                     datetime_obj = _str_datetime_to_datetime_obj(datetime_str)
                     showtime = Showtime(
                         date_time=datetime_obj,
+                        end_time=datetime_obj + duration_obj + timedelta(seconds=900) if duration_obj is not None else None,
                         movie=movie,
                     )
                     showtimes.append(showtime)

@@ -49,12 +49,22 @@ def extract_field_names(dict_list):
     type=str,
     help='check for a specific card pass, e.g. UGC Illimité',
 )
-def main(id_cinema, entrelignes, jour=None, semaine=None, card=None):
+@click.option(
+    '--earliest-time', '-f',
+    type=str,
+    help='filter to only shows starting after a given time',
+)
+@click.option(
+    '--latest-time', '-t',
+    type=str,
+    help='filter to only shows ending before a given time',
+)
+def main(id_cinema, entrelignes, jour=None, semaine=None, card=None, earliest_time=None, latest_time=None):
     """
     Les séances de votre cinéma dans le terminal, avec
     ID_CINEMA : identifiant du cinéma sur Allociné,
     ex: C0159 pour l’UGC Ciné Cité Les Halles. Se trouve dans l’url :
-    http://allocine.fr/seance/salle_gen_csalle=<ID_CINEMA>.html
+    https://allocine.fr/seance/salle_gen_csalle=<ID_CINEMA>.html
     """
     today = date.today()
     allocine = Allocine()
@@ -79,30 +89,60 @@ def main(id_cinema, entrelignes, jour=None, semaine=None, card=None):
     else:
         codes = id_cinema.split(',')
 
+    is_showtime_eligible = lambda showtime, jour: check_showtime_eligibility(showtime, jour, earliest_time, latest_time)
+
     for code in codes:
         theater = allocine.get_theater(theater_id=code)
         if card is not None:
             if card == 'UGC':
                 if 106002 not in (x['code'] for  x in theater.member_cards):
-                    print(f'SKIPPING {theater.name} because it does not accept UGC.\n')
+                    print(f'SKIPPING {theater.name} because it does not accept UGC Illimité.\n')
                     continue
 
-        display_theater(theater, jours, entrelignes)
+        display_theater(theater, jours, entrelignes, is_showtime_eligible)
 
-def display_theater(theater, jours, entrelignes):
-    print(f'{theater.name}')
+def parse_hour_as_datetime(jour, time):
+    if time is None:
+        return None
+    date_str = f'{jour.strftime("%d/%m/%Y")} {time}'
+    return datetime.strptime(date_str, '%d/%m/%Y %H:%M')
+
+def check_theater_late_eligibility_rules(theater, card):
+    return check_card_eligibility(theater, card)
+
+def check_card_eligibility(theater, card):
+    if card is not None:
+        if card == 'UGC':
+            if 106002 not in (x['code'] for  x in theater.member_cards):
+                print(f'SKIPPING {theater.name} because it does not accept UGC Illimité.\n')
+                return False
+    return True
+
+def check_showtime_eligibility(showtime, jour, earliest_time, latest_time):
+    start = parse_hour_as_datetime(jour, earliest_time)
+    end = parse_hour_as_datetime(jour, latest_time)
+
+    return (
+        (start is None or showtime.date_time > start) and
+        (end is None or showtime.end_time is None or showtime.end_time < end)
+    )
+
+def display_theater(theater, jours, entrelignes, is_showtime_eligible):
+    print(f'{theater.name} - {theater.theater_id}')
+    print(f'https://allocine.fr/seance/salle_gen_csalle={theater.theater_id}.html')
     print(f'{theater.address}, {theater.zipcode}, {theater.city}')
     print('\n'.join((f'✔️  {x.get("label")}' for x in theater.member_cards)))
     for jour in jours:
         print(get_showtime_table(
             theater=theater,
             entrelignes=entrelignes,
-            jour=jour)
+            jour=jour,
+            is_showtime_eligible=is_showtime_eligible)
         )
         print()
 
 
-def get_showtime_table(theater, entrelignes, jour):
+def get_showtime_table(theater, entrelignes, jour, is_showtime_eligible):
     showtime_table = []
 
     date_obj = datetime.strptime(jour, '%d/%m/%Y').date()
@@ -126,10 +166,14 @@ def get_showtime_table(theater, entrelignes, jour):
             movie_version=movie_version, date=date_obj)
 
         for showtime in showtimes:
-            hour = showtime.hour_str.split(':')[0]  # 11:15 => 11
-            movie_row[hour] = showtime.hour_str
+            if is_showtime_eligible(showtime, date_obj):
+                hour = showtime.hour_str.split(':')[0]  # 11:15 => 11
+                movie_row[hour] = f'{showtime.hour_str} - {showtime.end_hour_str}'
 
-        showtime_table.append(movie_row)
+        if len(movie_row) > 2:
+            showtime_table.append(movie_row)
+        else:
+            print(f'Skipping {title} due to no eligible showings. ', end='')
 
     seances = showtime_table
 
