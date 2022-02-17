@@ -1,5 +1,5 @@
-
 from dataclasses import dataclass
+
 
 @dataclass
 class MemberCard:
@@ -7,6 +7,4 @@ class MemberCard:
     label: str
 
     def __str__(self):
-        return f'{self.label}'
-
-
+        return f"{self.label}"

@@ -9,17 +9,17 @@ import pytest
 from allocine import Allocine
 
 
-def test_class_Theater():
+def test_class_Cinema():
     allocine = Allocine()
-    theater = allocine.get_theater(theater_id='P0645')
-    assert len(theater.showtimes) > 0
+    cinema = allocine.get_cinema(cinema_id="P0645")
+    assert len(cinema.showtimes) > 0
 
-    date = theater.showtimes[0].date
-    movies = theater.get_movies_available_for_a_day(date)
+    date = cinema.showtimes[0].date
+    movies = cinema.get_movies_available_for_a_day(date)
     assert len(movies) > 0
 
 
 def test_class_Allocine_errors():
     allocine = Allocine()
     with pytest.raises(ValueError):
-        allocine.get_theater(theater_id="UNKOWN")
+        allocine.get_cinema(cinema_id="UNKOWN")

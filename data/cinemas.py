@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from datetime import date
 from typing import List
 
-from allocine.memberships import MemberCard
-from allocine.movies import MovieVersion
-from allocine.showtimes import Showtime, build_program_str, get_showtimes_of_a_day
+from .memberships import MemberCard
+from .movies import MovieVersion
+from .showtimes import Showtime, build_program_str, get_showtimes_of_a_day
 
 
 @dataclass
@@ -19,16 +19,16 @@ class Cinema:
 
     @property
     def address_str(self):
-        address_str = f'{self.address}, ' if self.address else ''
-        address_str += f'{self.zipcode} {self.city}'
+        address_str = f"{self.address}, " if self.address else ""
+        address_str += f"{self.zipcode} {self.city}"
         return address_str
 
     def get_showtimes_of_a_movie(self, movie_version: MovieVersion, date: date = None):
-        movie_showtimes = [showtime for showtime in self.showtimes
-                           if showtime.movie == movie_version]
+        movie_showtimes = [
+            showtime for showtime in self.showtimes if showtime.movie == movie_version
+        ]
         if date:
-            return [showtime for showtime in movie_showtimes
-                    if showtime.date == date]
+            return [showtime for showtime in movie_showtimes if showtime.date == date]
         else:
             return movie_showtimes
 
@@ -36,7 +36,7 @@ class Cinema:
         return get_showtimes_of_a_day(showtimes=self.showtimes, date=date)
 
     def get_movies_available_for_a_day(self, date: date):
-        """ Returns a list of movies available on a specified day """
+        """Returns a list of movies available on a specified day"""
         movies = [showtime.movie for showtime in self.get_showtimes_of_a_day(date)]
         return list(set(movies))
 
@@ -70,8 +70,8 @@ class Cinema:
             self.showtimes = [s for s in self.showtimes if s.date <= date_max]
 
     def __eq__(self, other):
-        return (self.theater_id) == (other.theater_id)
+        return (self.id) == (other.id)
 
     def __hash__(self):
-        """ This function allows us to do a set(list_of_Theaters_objects) """
-        return hash(self.theater_id)
+        """This function allows us to do a set(list_of_Theaters_objects)"""
+        return hash(self.id)
