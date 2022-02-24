@@ -98,6 +98,23 @@ class MovieVersion(Movie):
             version += f" {self.screen_format}"
         return version
 
+    def toJSON(self):
+        return {
+            'language': self.language,
+            'format': self.screen_format,
+            'movie_id': self.movie_id,
+            'title': self.title,
+            'rating': self.rating,
+            'duration_in_seconds': self.duration.total_seconds(),
+            'original_title': self.original_title,
+            'year': self.year,
+            'genres': self.genres,
+            'countries': self.countries,
+            'directors': self.directors,
+            'actors': self.actors,
+            'synopsis': self.synopsis,
+        }
+
     def get_movie(self):
         return Movie(
             movie_id=self.movie_id,

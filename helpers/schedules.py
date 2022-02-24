@@ -1,5 +1,4 @@
 from dataclasses import dataclass, fields
-import dataclasses
 from datetime import datetime, timedelta, date, time
 from collections import OrderedDict
 from typing import List, Optional
@@ -10,7 +9,6 @@ from helpers.timing import (
     short_day_str,
     to_french_short_weekday,
 )
-
 
 @dataclass
 class Schedule:
@@ -46,6 +44,10 @@ class Schedule:
     @property
     def date_str(self) -> date:
         return self.date_time.strftime("%d/%m/%Y %H:%M")
+
+    @property
+    def end_date_str(self) -> date:
+        return self.end_time.strftime("%d/%m/%Y %H:%M") if self.end_time is not None else "unknown"
 
     @property
     def day_str(self) -> str:

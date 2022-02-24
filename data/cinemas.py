@@ -17,6 +17,16 @@ class Cinema:
     city: str
     member_cards: List[MemberCard]
 
+    def toJSON(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'address': self.address,
+            'zipcode': self.zipcode,
+            'city': self.city,
+            'member_cards': self.member_cards
+        }
+
     @property
     def address_str(self):
         address_str = f"{self.address}, " if self.address else ""

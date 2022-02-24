@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """CLI tool for allocine"""
+import json
 import click
 from allocine import Allocine
 from prettytable import PrettyTable, UNICODE, FRAME, ALL
 from datetime import date, timedelta, datetime
+
+from data.aggregation import ShowtimeWithCinema
 
 # Usage : seances.py --help
 
@@ -126,17 +129,29 @@ def main(
             else:
                 display_cinema(cinema, all_days_seance_data, entrelignes)
 
-def display_cinema_json():
-    pass
+def dumper(obj):
+    try:
+        return obj.toJSON()
+    except Exception as f:
+        print('Exception for toJSON', f, type(obj))
+        return obj.__dict__
+
+def display_cinema_json(cinema, showings, link):
+    log = json.dumps({
+        'cinema': cinema,
+        'showings': showings
+    }, default=dumper, indent=2)
+    print(log)
 
 def get_all_days_seance_data(cinema, days, is_showtime_eligible):
-    return ((
-        day,
-        get_seance_data(
-                    cinema=cinema,
-                    jour=day,
-                    is_showtime_eligible=is_showtime_eligible,
-        )) for day in days)
+    return [{
+        'day': day,
+        'showings': get_seance_data(
+            cinema=cinema,
+            jour=day,
+            is_showtime_eligible=is_showtime_eligible
+        )
+    } for day in days]
 
 def parse_hour_as_datetime(jour, time):
     if time is None:
@@ -193,9 +208,12 @@ def get_seance_data(cinema, jour, is_showtime_eligible):
     date_obj = datetime.strptime(jour, "%d/%m/%Y").date()
     available_films = get_available_films(cinema, date_obj)
 
-    return (
-        (film, get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible)) for film in available_films
-    )
+    return [
+        {
+            'film': film,
+            'showtimes': list(get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible))
+        } for film in available_films
+    ]
 
 def get_available_films(cinema, date_obj):
     return cinema.get_movies_available_for_a_day(date=date_obj)
@@ -206,7 +224,7 @@ def get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible):
         )
     for showtime in showtimes:
         if is_showtime_eligible(showtime, date_obj):
-            yield showtime
+            yield ShowtimeWithCinema(cinema=cinema, showtime=showtime)
 
 def display_seances(seance_data, link=False):
     seances = []
