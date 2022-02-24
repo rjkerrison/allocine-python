@@ -50,6 +50,12 @@ def extract_field_names(dict_list):
     help="check for a specific card pass, e.g. UGC Illimité",
 )
 @click.option(
+    "--link",
+    "-l",
+    is_flag=True,
+    help="Include links to add to Google Calendar",
+)
+@click.option(
     "--earliest-time",
     "-f",
     type=str,
@@ -61,6 +67,11 @@ def extract_field_names(dict_list):
     type=str,
     help="filter to only shows ending before a given time",
 )
+@click.option(
+    "--format",
+    type=str,
+    help="default, or json",
+)
 def main(
     id_cinema,
     entrelignes,
@@ -69,6 +80,8 @@ def main(
     card=None,
     earliest_time=None,
     latest_time=None,
+    link=False,
+    format=None
 ):
     """
     Les séances de votre cinéma dans le terminal, avec
@@ -106,8 +119,24 @@ def main(
     for code in codes:
         cinema = allocine.get_cinema(cinema_id=code)
         if check_cinema_late_eligibility_rules(cinema, card):
-            display_cinema(cinema, jours, entrelignes, is_showtime_eligible)
+            all_days_seance_data = get_all_days_seance_data(cinema, jours, is_showtime_eligible)
 
+            if format == "json":
+                display_cinema_json(cinema, all_days_seance_data, link)
+            else:
+                display_cinema(cinema, all_days_seance_data, entrelignes)
+
+def display_cinema_json():
+    pass
+
+def get_all_days_seance_data(cinema, days, is_showtime_eligible):
+    return ((
+        day,
+        get_seance_data(
+                    cinema=cinema,
+                    jour=day,
+                    is_showtime_eligible=is_showtime_eligible,
+        )) for day in days)
 
 def parse_hour_as_datetime(jour, time):
     if time is None:
@@ -115,10 +144,8 @@ def parse_hour_as_datetime(jour, time):
     date_str = f'{jour.strftime("%d/%m/%Y")} {time}'
     return datetime.strptime(date_str, "%d/%m/%Y %H:%M")
 
-
 def check_cinema_late_eligibility_rules(cinema, card):
     return check_card_eligibility(cinema, card)
-
 
 def check_card_eligibility(cinema, card):
     if card is not None:
@@ -140,16 +167,16 @@ def check_showtime_eligibility(showtime, jour, earliest_time, latest_time):
     )
 
 
-def display_cinema(cinema, jours, entrelignes, is_showtime_eligible):
+def display_cinema(cinema, seance_data_all_days, entrelignes):
     tables = []
 
-    for jour in jours:
-        seances = get_seances(
-            cinema=cinema, jour=jour, is_showtime_eligible=is_showtime_eligible
+    for (day, seance_data) in seance_data_all_days:
+        seances = display_seances(
+            seance_data, link=True
         )
 
         if len(seances) > 0:
-            tables += [jour, get_showtime_table(seances, entrelignes)]
+            tables += [day, get_showtime_table(seances, entrelignes)]
 
     if len(tables) > 0:
         print(f"{cinema.name} - {cinema.id}")
@@ -162,15 +189,29 @@ def display_cinema(cinema, jours, entrelignes, is_showtime_eligible):
     else:
         log_v(f"{cinema.name} - {cinema.id} has no eligible showings.")
 
+def get_seance_data(cinema, jour, is_showtime_eligible):
+    date_obj = datetime.strptime(jour, "%d/%m/%Y").date()
+    available_films = get_available_films(cinema, date_obj)
 
-def get_seances(cinema, jour, is_showtime_eligible):
+    return (
+        (film, get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible)) for film in available_films
+    )
+
+def get_available_films(cinema, date_obj):
+    return cinema.get_movies_available_for_a_day(date=date_obj)
+
+def get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible):
+    showtimes = cinema.get_showtimes_of_a_movie(
+            movie_version=film, date=date_obj
+        )
+    for showtime in showtimes:
+        if is_showtime_eligible(showtime, date_obj):
+            yield showtime
+
+def display_seances(seance_data, link=False):
     seances = []
 
-    date_obj = datetime.strptime(jour, "%d/%m/%Y").date()
-    movies_available_today = cinema.get_movies_available_for_a_day(date=date_obj)
-
-    for movie_version in movies_available_today:
-
+    for (movie_version, showtimes) in seance_data:
         title = movie_version.title
         if len(title) >= 31:  # On tronque les titres trop longs
             title = title[:31] + "..."
@@ -184,14 +225,9 @@ def get_seances(cinema, jour, is_showtime_eligible):
 
         movie_row["*2_note"] = "{}*".format(movie_version.rating_str)
 
-        showtimes = cinema.get_showtimes_of_a_movie(
-            movie_version=movie_version, date=date_obj
-        )
-
         for showtime in showtimes:
-            if is_showtime_eligible(showtime, date_obj):
-                hour = showtime.hour_str.split(":")[0]  # 11:15 => 11
-                movie_row[hour] = f"{showtime.hour_str} - {showtime.end_hour_str}"
+            hour = showtime.hour_str.split(":")[0]  # 11:15 => 11
+            movie_row[hour] = f"{showtime.hour_str}\n{showtime.gcal_link() if link else ''}"
 
         if len(movie_row) > 2:
             seances.append(movie_row)

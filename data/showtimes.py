@@ -5,10 +5,28 @@ from typing import List
 from helpers.schedules import Schedule, build_weekly_schedule_str
 from .movies import MovieVersion
 
+GCAL_BASE_URL = 'https://www.google.com/calendar/render?action=TEMPLATE'
+
+def build_querystring(**kwargs):
+    return '&'.join(f'{key}={kwargs[key]}' for key in kwargs)
+
+def get_link_for_showing(title):
+
+    qs = build_querystring(
+        text = f'Cinema:+{title}',
+        dates = '20220224T224000Z/20220224T224000Z',
+        # details = 'Go+to+the+cinema',
+        # location = 'MK2+Gambetta,+6+Rue+Belgrand+75020+Paris,+France',
+    )
+
+    return f'{GCAL_BASE_URL}&{qs}'
 
 @dataclass
 class Showtime(Schedule):
     movie: MovieVersion
+
+    def gcal_link(self):
+        return get_link_for_showing(self.movie.title)
 
     def __str__(self):
         return f"{self.date_str} : {self.movie}"
