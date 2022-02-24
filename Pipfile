@@ -9,6 +9,7 @@ click = "==8.0"
 jmespath = "==0.9.5"
 requests = "==2.21.0"
 PTableUnicode = "==0.9.3"
+flask = "*"
 
 [dev-packages]
 pytest = "*"
