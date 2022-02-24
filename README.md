@@ -103,9 +103,9 @@ seances.py P2235 --semaine
 from allocine import Allocine
 
 allocine = Allocine()
-theater = allocine.get_theater("P2235")
+cinema = allocine.get_cinema("P2235")
 
-for showtime in theater.showtimes:
+for showtime in cinema.showtimes:
     print(showtime)
 ```
 
@@ -143,11 +143,12 @@ Install it with :
 curl -s https://raw.githubusercontent.com/tducret/allocine-python/master/seances \
 > /usr/local/bin/seances && chmod +x /usr/local/bin/seances
 ```
-*You may replace `/usr/local/bin` with another folder that is in your $PATH*
+
+_You may replace `/usr/local/bin` with another folder that is in your $PATH_
 
 Check that it works :
 
-*On the first execution, the script will download the Docker image, so please be patient*
+_On the first execution, the script will download the Docker image, so please be patient_
 
 ```bash
 seances --help
