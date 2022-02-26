@@ -70,7 +70,7 @@ class Allocine:
     def get_cinema_ids(self, geocode: int):
         codes = []
         page = 1
-        while page < 5:  # let's not loop forever
+        while page < 10:  # let's not loop forever
             ret = self.__client.get_showtimelist_from_geocode(
                 geocode=geocode, page=page
             )

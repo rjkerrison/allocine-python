@@ -25,7 +25,7 @@ class ShowtimeWithCinema:
     def gcal_link(self):
         qs = build_querystring(
             text = f"Cinema: {self.showtime.movie.title}",
-            dates = f'{self.showtime.date_time.strftime("%Y%m%dT%H%M%SZ")}/{self.showtime.end_time.strftime("%Y%m%dT%H%M%SZ")}',
+            dates = self.showtime.start_end_utc_string,
             details = self.showtime.movie.synopsis,
             location = self.cinema.address_str,
         )

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import json
-from typing import Generator, List
+from typing import List
 from allocine import Allocine
 from prettytable import PrettyTable, UNICODE, FRAME, ALL
 from datetime import date, timedelta, datetime
@@ -64,7 +64,7 @@ def check_cinema_late_eligibility_rules(cinema, card):
     return check_card_eligibility(cinema, card)
 
 def check_card_eligibility(cinema, card):
-    if card is not None:
+    if card is not None and cinema.member_cards is not None:
         if card == "UGC":
             if 106002 not in (x["code"] for x in cinema.member_cards):
                 log_v(
@@ -82,15 +82,12 @@ def check_showtime_eligibility(showtime, jour, earliest_time, latest_time):
         end is None or showtime.end_time is None or showtime.end_time < end
     )
 
-
 def display_cinema(cinema, seance_data_all_days: List[DayFilmShowtimes], entrelignes):
     tables = []
     result = ""
 
     for seance_data in seance_data_all_days:
-        seances = display_seances(
-            seance_data.showings, link=True
-        )
+        seances = display_seances(seance_data.showings)
 
         if len(seances) > 0:
             tables += [seance_data.day, get_showtime_table(seances, entrelignes)]
@@ -103,10 +100,10 @@ def display_cinema(cinema, seance_data_all_days: List[DayFilmShowtimes], entreli
         for table in tables:
             result += (table) + "\n"
 
-        return table
+        return result
 
     else:
-        log_v(f"{cinema.name} - {cinema.id} has no eligible showings.")
+        print(f"{cinema.name} - {cinema.id} has no eligible showings.")
 
 
 def get_seance_data(cinema, jour, is_showtime_eligible) -> List[FilmShowtimesGroup]:
@@ -131,7 +128,7 @@ def get_eligible_showtimes(cinema, film, date_obj, is_showtime_eligible) -> List
         if is_showtime_eligible(showtime, date_obj):
             yield ShowtimeWithCinema(cinema=cinema, showtime=showtime)
 
-def display_seances(film_showtimes_groups: List[FilmShowtimesGroup], link=False):
+def display_seances(film_showtimes_groups: List[FilmShowtimesGroup]) -> List[dict[str, str]]:
     seances = []
 
     for film_showtimes_group in film_showtimes_groups:

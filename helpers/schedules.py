@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from datetime import datetime, timedelta, date, time
 from collections import OrderedDict
 from typing import List, Optional
@@ -13,11 +13,11 @@ from helpers.timing import (
 @dataclass
 class Schedule:
     date_time: datetime
-    end_time: Optional[datetime]
+    end_time: datetime
 
     def __init__(self, date_time: datetime, end_time: Optional[datetime] = None):
         self.date_time = date_time
-        self.end_time = end_time
+        self.end_time = end_time if end_time is not None else date_time + timedelta(minutes=15)
 
     @property
     def date(self) -> date:
@@ -33,9 +33,7 @@ class Schedule:
 
     @property
     def end_hour_str(self) -> str:
-        return (
-            self.end_time.strftime("%H:%M") if self.end_time is not None else "unknown"
-        )
+        return self.end_time.strftime("%H:%M")
 
     @property
     def hour_short_str(self) -> str:
@@ -47,7 +45,7 @@ class Schedule:
 
     @property
     def end_date_str(self) -> date:
-        return self.end_time.strftime("%d/%m/%Y %H:%M") if self.end_time is not None else "unknown"
+        return self.end_time.strftime("%d/%m/%Y %H:%M")
 
     @property
     def day_str(self) -> str:
@@ -57,6 +55,17 @@ class Schedule:
     def short_day_str(self) -> str:
         return short_day_str(self.date)
 
+    @property
+    def start_as_utc_string(self) -> str:
+        return self.date_time.strftime("%Y%m%dT%H%M%S")
+
+    @property
+    def end_as_utc_string(self) -> str:
+        return self.end_time.strftime("%Y%m%dT%H%M%S")
+
+    @property
+    def start_end_utc_string(self) -> str:
+        return f"{self.start_as_utc_string}/{self.end_as_utc_string}"
 
 def build_weekly_schedule_str(schedule_list: List[Schedule]) -> str:
     check_schedules_within_week(schedule_list)
