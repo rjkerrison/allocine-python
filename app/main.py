@@ -4,6 +4,7 @@ from typing import List
 from allocine import Allocine
 from prettytable import PrettyTable, UNICODE, FRAME, ALL
 from datetime import date, timedelta, datetime
+from app.formatting import dumper
 
 from data.aggregation import ShowtimeWithCinema
 from data.cinemas import Cinema
@@ -29,13 +30,6 @@ class FilmShowtimesGroup:
 class DayFilmShowtimes:
     day: str
     showings: List[FilmShowtimesGroup]
-
-def dumper(obj):
-    try:
-        return obj.toJSON()
-    except Exception as f:
-        print('Exception for toJSON', f, type(obj))
-        return obj.__dict__
 
 def display_cinema_json(cinema, showings: List[DayFilmShowtimes]):
     log = json.dumps({
@@ -93,8 +87,8 @@ def display_cinema(cinema, seance_data_all_days: List[DayFilmShowtimes], entreli
             tables += [seance_data.day, get_showtime_table(seances, entrelignes)]
 
     if len(tables) > 0:
-        result += (f"{cinema.name} - {cinema.id}") + "\n"
-        log_v(f"https://allocine.fr/seance/salle_gen_csalle={cinema.id}.html")
+        result += (f"{cinema.name} - {cinema.allocine_cinema_id}") + "\n"
+        log_v(f"https://allocine.fr/seance/salle_gen_csalle={cinema.allocine_cinema_id}.html")
         result += (f"{cinema.address}, {cinema.zipcode}, {cinema.city}") + "\n"
         log_v("\n".join((f'✔️  {x.get("label")}' for x in cinema.member_cards)))
         for table in tables:
@@ -103,7 +97,7 @@ def display_cinema(cinema, seance_data_all_days: List[DayFilmShowtimes], entreli
         return result
 
     else:
-        print(f"{cinema.name} - {cinema.id} has no eligible showings.")
+        print(f"{cinema.name} - {cinema.allocine_cinema_id} has no eligible showings.")
 
 
 def get_seance_data(cinema, jour, is_showtime_eligible) -> List[FilmShowtimesGroup]:
@@ -197,13 +191,12 @@ def get_showings(
     card=None,
     earliest_time=None,
     latest_time=None,
-    link=False,
     format=None
 ):
     """
     Les séances de votre cinéma dans le terminal, avec
     ID_CINEMA : identifiant du cinéma sur Allociné,
-    ex: C0159 pour l’UGC Ciné Cité Les Halles. Se trouve dans l’url :
+    ex: C0159 pour l'UGC Ciné Cité Les Halles. Se trouve dans l'url :
     https://allocine.fr/seance/salle_gen_csalle=<ID_CINEMA>.html
     """
     today = date.today()
@@ -234,7 +227,7 @@ def get_showings(
     )
 
     for code in codes:
-        cinema = allocine.get_cinema(cinema_id=code)
+        cinema = allocine.get_cinema(allocine_cinema_id=code)
         if check_cinema_late_eligibility_rules(cinema, card):
             all_days_seance_data = get_all_days_seance_data(cinema, jours, is_showtime_eligible)
 
@@ -242,4 +235,3 @@ def get_showings(
                 yield display_cinema_json(cinema, all_days_seance_data)
             else:
                 yield display_cinema(cinema, all_days_seance_data, entrelignes)
-

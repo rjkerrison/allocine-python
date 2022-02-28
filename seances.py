@@ -2,14 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """CLI tool for allocine"""
-import json
 import click
-from allocine import Allocine
-from prettytable import PrettyTable, UNICODE, FRAME, ALL
-from datetime import date, timedelta, datetime
 from app.main import get_showings
-
-from data.aggregation import ShowtimeWithCinema
 
 # Usage : seances.py --help
 
@@ -41,12 +35,6 @@ from data.aggregation import ShowtimeWithCinema
     help="check for a specific card pass, e.g. UGC Illimité",
 )
 @click.option(
-    "--link",
-    "-l",
-    is_flag=True,
-    help="Include links to add to Google Calendar",
-)
-@click.option(
     "--earliest-time",
     "-f",
     type=str,
@@ -71,7 +59,6 @@ def main(
     card=None,
     earliest_time=None,
     latest_time=None,
-    link=False,
     format=None
 ):
     showings = get_showings(
@@ -82,7 +69,6 @@ def main(
         card,
         earliest_time,
         latest_time,
-        link,
         format
     )
     for showing in showings:

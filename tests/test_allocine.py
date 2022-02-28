@@ -11,7 +11,7 @@ from allocine import Allocine
 
 def test_class_Cinema():
     allocine = Allocine()
-    cinema = allocine.get_cinema(cinema_id="P0645")
+    cinema = allocine.get_cinema(allocine_cinema_id="P0645")
     assert len(cinema.showtimes) > 0
 
     date = cinema.showtimes[0].date
@@ -22,4 +22,4 @@ def test_class_Cinema():
 def test_class_Allocine_errors():
     allocine = Allocine()
     with pytest.raises(ValueError):
-        allocine.get_cinema(cinema_id="UNKOWN")
+        allocine.get_cinema(allocine_cinema_id="UNKOWN")

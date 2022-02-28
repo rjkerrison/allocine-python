@@ -9,7 +9,7 @@ from .showtimes import Showtime, build_program_str, get_showtimes_of_a_day
 
 @dataclass
 class Cinema:
-    id: str
+    allocine_id: str
     name: str
     showtimes: List[Showtime]
     address: str
@@ -19,7 +19,7 @@ class Cinema:
 
     def toJSON(self):
         return {
-            'id': self.id,
+            'allocine_id': self.allocine_id,
             'name': self.name,
             'address': self.address,
             'zipcode': self.zipcode,
@@ -80,8 +80,8 @@ class Cinema:
             self.showtimes = [s for s in self.showtimes if s.date <= date_max]
 
     def __eq__(self, other):
-        return (self.id) == (other.id)
+        return (self.allocine_id) == (other.allocine_id)
 
     def __hash__(self):
         """This function allows us to do a set(list_of_Theaters_objects)"""
-        return hash(self.id)
+        return hash(self.allocine_id)

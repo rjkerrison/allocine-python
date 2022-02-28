@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request
+from app.cinemas import get_cinemas
 
 from app.main import get_showings
 
@@ -33,10 +34,8 @@ def create_app(test_config=None):
     # get cinema list
     @app.route('/cinemas/')
     def cinemas():
-        import json
+        data = get_cinemas(format='json')
 
-        args = request.args
-        data = json.dumps(args.to_dict())
         response = app.response_class(
             response=data,
             status=200,
@@ -44,15 +43,15 @@ def create_app(test_config=None):
         )
         return response
 
-    @app.route('/showings/<id>')
-    def showings(id):
+    @app.route('/showings/<allocine_cinema_id>')
+    def showings(allocine_cinema_id):
         args = request.args
 
         earliest_time = args.get("start", default=None, type=str)
         latest_time = args.get("end", default=None, type=str)
 
         data = get_showings(
-            id,
+            allocine_cinema_id,
             format='json',
             earliest_time=earliest_time,
             latest_time=latest_time,
