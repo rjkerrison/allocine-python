@@ -41,11 +41,11 @@ class Schedule:
 
     @property
     def date_str(self) -> date:
-        return self.date_time.strftime("%d/%m/%Y %H:%M")
+        return self.date_time.strftime("%Y-%m-%d %H:%M")
 
     @property
     def end_date_str(self) -> date:
-        return self.end_time.strftime("%d/%m/%Y %H:%M")
+        return self.end_time.strftime("%Y-%m-%d %H:%M")
 
     @property
     def day_str(self) -> str:

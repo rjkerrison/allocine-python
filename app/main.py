@@ -46,7 +46,7 @@ def display_cinema_json(cinema, showings: List[DayFilmShowtimes]):
 
 def get_all_days_seance_data(cinema: Cinema, days: List[str], is_showtime_eligible) -> List[DayFilmShowtimes]:
     return [DayFilmShowtimes(
-        day=day,
+        day=datetime.strptime(day, "%d/%m/%Y").strftime("%Y-%m-%d"),
         showings=get_seance_data(
             cinema=cinema,
             jour=day,

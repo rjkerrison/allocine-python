@@ -126,6 +126,7 @@ class Allocine:
             duration_obj = timedelta(seconds=duration) if duration else None
 
             rating = jmespath.search("statistics.userRating", raw_movie)
+            poster = jmespath.search("poster.href", raw_movie)
             try:
                 rating = float(rating)
             except (ValueError, TypeError):
@@ -151,6 +152,7 @@ class Allocine:
                 directors=jmespath.search("castingShort.directors", movie_info),
                 actors=jmespath.search("castingShort.actors", movie_info),
                 duration=duration_obj,
+                poster=poster
             )
             for showtimes_of_day in s.get("scr") or []:
                 if showtimes_of_day is None:

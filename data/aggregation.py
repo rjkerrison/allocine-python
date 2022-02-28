@@ -17,7 +17,7 @@ class ShowtimeWithCinema:
 
     def toJSON(self):
         return {
-            'time': self.showtime.date_str,
+            'start_time': self.showtime.date_str,
             'end_time': self.showtime.end_date_str,
             'link': self.gcal_link()
         }

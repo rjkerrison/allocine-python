@@ -22,6 +22,7 @@ class Movie:
     actors: str
     synopsis: str
     year: int
+    poster: str
 
     @property
     def duration_str(self):
@@ -113,6 +114,7 @@ class MovieVersion(Movie):
             'directors': self.directors,
             'actors': self.actors,
             'synopsis': self.synopsis,
+            'poster': self.poster,
         }
 
     def get_movie(self):
@@ -128,6 +130,7 @@ class MovieVersion(Movie):
             directors=self.directors,
             actors=self.actors,
             synopsis=self.synopsis,
+            poster=self.poster,
         )
 
     def __str__(self):
