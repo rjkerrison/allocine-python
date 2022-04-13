@@ -22,9 +22,13 @@ class Allocine:
         )  # Dict to store the movie info (and avoid useless requests)
 
     def get_cinema(self, allocine_cinema_id: str):
-        ret = self.__client.get_showtimelist_by_cinema_id(allocine_cinema_id=allocine_cinema_id)
+        ret = self.__client.get_showtimelist_by_cinema_id(
+            allocine_cinema_id=allocine_cinema_id
+        )
         if jmespath.search("feed.totalResults", ret) == 0:
-            raise ValueError(f"Cinema not found. Is allocine_cinema_id {allocine_cinema_id!r} correct?")
+            raise ValueError(
+                f"Cinema not found. Is allocine_cinema_id {allocine_cinema_id!r} correct?"
+            )
 
         cinemas = self.__get_cinemas_from_raw_showtimelist(raw_showtimelist=ret)
         if len(cinemas) != 1:
